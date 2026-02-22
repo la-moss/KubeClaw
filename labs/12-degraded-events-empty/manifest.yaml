@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: degraded-events-demo
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: degraded-events-demo
+  template:
+    metadata:
+      labels:
+        app: degraded-events-demo
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.27

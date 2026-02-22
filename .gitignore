@@ -1,0 +1,29 @@
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Local secrets and environment files
+.env
+.env.local
+*.pem
+*.key
+*.crt
+*kubeconfig*
+kubeclaw-reader.kubeconfig
+
+# IDE/editor metadata
+.DS_Store
+.idea/
+.vscode/
+
+# Generated runtime artifacts
+snapshots/
+reports/
+*.log

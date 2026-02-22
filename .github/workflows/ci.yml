@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test deps
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Run unit tests
+        run: python -m pytest -q
+
+  scenario-kind:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lab: 01-crashloop
+            symptom: "CrashLoopBackOff"
+            expect: "crashloop"
+          - lab: 02-imagepull
+            symptom: "ImagePullBackOff"
+            expect: "imagepull"
+          - lab: 03-pending
+            symptom: "Pending"
+            expect: "pending"
+          - lab: 04-service-unreachable
+            symptom: "service unreachable"
+            expect: "service_unreachable"
+          - lab: 05-oom
+            symptom: "OOMKilled"
+            expect: "oom"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime deps
+        run: python -m pip install --upgrade pip
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kubeclaw
+
+      - name: Run self-check
+        run: python -m agent.main self-check --ns demo
+
+      - name: Run deterministic scenario check
+        run: python scripts/ci_scenario_check.py --lab "${{ matrix.lab }}" --symptom "${{ matrix.symptom }}" --expect "${{ matrix.expect }}"
+
+  adversarial-kind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime deps
+        run: python -m pip install --upgrade pip
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kubeclaw
+
+      - name: Run self-check
+        run: python -m agent.main self-check --ns demo
+
+      - name: Run adversarial hardening checks
+        run: python scripts/ci_adversarial_check.py
+
+  hybrid-kind:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lab: 06-pending-quota
+            symptom: "Pending pod"
+            expect: "pending"
+          - lab: 07-oom-probe
+            symptom: "OOMKilled"
+            expect: "oom"
+          - lab: 08-service-500
+            symptom: "service unreachable"
+            expect: "service_unreachable"
+          - lab: 09-crashloop-secret-crossns
+            symptom: "CrashLoopBackOff"
+            expect: "crashloop"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime deps
+        run: python -m pip install --upgrade pip
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kubeclaw
+
+      - name: Run self-check
+        run: python -m agent.main self-check --ns demo
+
+      - name: Run hybrid scenario check
+        run: python scripts/ci_scenario_check.py --lab "${{ matrix.lab }}" --symptom "${{ matrix.symptom }}" --expect "${{ matrix.expect }}"
+
+  scale-noise-kind:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lab: 10-noisy-service-selector
+            symptom: "service unreachable"
+            expect: "selector mismatch"
+          - lab: 11-noisy-pending-capacity
+            symptom: "Pending pod"
+            expect: "Insufficient cpu"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime deps
+        run: python -m pip install --upgrade pip
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kubeclaw
+
+      - name: Run self-check
+        run: python -m agent.main self-check --ns demo
+
+      - name: Run scale/noise scenario check
+        run: python scripts/ci_scale_noise_check.py --lab "${{ matrix.lab }}" --symptom "${{ matrix.symptom }}" --expect "${{ matrix.expect }}" --max-facts 6
+
+  degraded-observability-kind:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lab: 12-degraded-events-empty
+            symptom: "CrashLoopBackOff"
+          - lab: 13-degraded-logs-empty
+            symptom: "CrashLoopBackOff"
+          - lab: 14-degraded-describe-partial
+            symptom: "Pending pod"
+          - lab: 15-degraded-metrics-api
+            symptom: "OOMKilled"
+          - lab: 16-degraded-api-timeout
+            symptom: "service unreachable"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime deps
+        run: python -m pip install --upgrade pip
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kubeclaw
+
+      - name: Run self-check
+        run: python -m agent.main self-check --ns demo
+
+      - name: Run degraded observability check
+        run: python scripts/ci_degraded_observability_check.py --lab "${{ matrix.lab }}" --symptom "${{ matrix.symptom }}" --action-budget 1

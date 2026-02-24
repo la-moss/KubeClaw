@@ -29,17 +29,6 @@ Build a **deterministic, read-only Kubernetes triage agent** that:
 6. Can replay incidents offline from snapshots
 7. Produces structured incident reports
 
-The goal is correctness and safety, not flash.
-
-## What this is not
-
-- Not a cluster operator
-- Not an auto-remediation tool
-- Not a Slack bot
-- Not a multi-cluster SaaS
-- Not connected to production
-- Not allowed to execute write operations
-
 ## Core philosophy
 
 Most Kubernetes automation targets execution (`apply`, deploy, sync loops).  

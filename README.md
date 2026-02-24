@@ -1,4 +1,4 @@
-# KubeClaw (Lab Edition)
+# KubeClaw (built on OpenClaw)
 
 **A safety-first, read-only Kubernetes incident triage agent for local clusters.**
 
